@@ -3,7 +3,6 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-import pandas as pd
 import os
 import matplotlib.colors as colors
 import numpy as np
@@ -115,8 +114,16 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
     def fileDialog(self): # to brows the file
         self.vSimulat = filedialog.askopenfilename(initialdir=os.getcwd(), title="Select A File",filetypes=[('ecc',"*.ecc"),('All files', '*')])
         if self.vSimulat:
-            self.df = pd.read_csv(self.vSimulat, sep=' ', comment='#', header=None)
-            self.dr=self.df.to_numpy()
+            self.dr=np.loadtxt(self.vSimulat, delimiter=' ', comments='#')#self.df.to_numpy()
+            self.line15=open(self.vSimulat, "r").readlines()[15]
+            if 'Dimentions of the graph are:' in self.line15:
+                X=self.line15.strip('#');X=X.strip('Dimentions of the graph are:');X=X.strip('\n')
+                self.dimentions_var=np.fromstring(X, dtype=np.float, sep=',')
+                self.LC_1.set(self.dimentions_var[0]);self.LC_2.set(self.dimentions_var[1])
+                self.H1_1.set(self.dimentions_var[3]);self.H1_2.set(self.dimentions_var[4])
+            else:
+                messagebox.showinfo("Warning",'please check your file to see if the dimentions are in line 15')
+
         else:
             messagebox.showinfo("Warning",'Please choose a file to plot')
 

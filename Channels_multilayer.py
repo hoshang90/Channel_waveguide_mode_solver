@@ -349,11 +349,12 @@ class Channel():
         print("---------------")
         print('Fichiers enregistres: self.lesDn.T: '+fich)
         print("f(x)=x<0?1/0:DnCB/(x+sqrt(DnCB*DnCB+x*x))")
-        print("plot DnCB=7e-5,\""+fich+"\" matrix\
+        print("plot DnCB=1.97e-6,\""+fich+"\" matrix\
                 u ($1*{}+{}):($2*{}+{}):(f($3)) w image".format(dX,X0,dY,Y0))
-        entete=self.LaStructure()+"f(x)=cb/(x+sqrt(cb*cb+x*x))\n"
-        entete+="plot cb=4e-3/180*0.64,\"+fich+\" matrix u ($1*{}+{}):($2*{}+{}):(f($3)) w image".format(dX,X0,dY,Y0)
-        entete += "Ploting variables are X0={},X1={},dX={},Y0={},Y1={},dY={},".format(X0,X1,dX,Y0,Y1,dY)
+        entete=self.LaStructure()+"f(x)=x<0?1/0:DnCB/(x+sqrt(DnCB*DnCB+x*x))\n"
+        entete+="plot DnCB=1.97e-6,\"+fich+\" matrix u ($1*{}+{}):($2*{}+{}):(f($3)) w image\n".format(dX,X0,dY,Y0)
+        entete += "Ploting variables are X0={},X1={},dX={},Y0={},Y1={},dY={}\n".format(X0,X1,dX,Y0,Y1,dY)
+        entete += "Dimentions of the graph are: {},{},{},{},{},{}".format(X0,X1,dX,Y0,Y1,dY)
         np.savetxt(fich,self.lesDn.T,fmt='%.2g',header=entete, encoding='utf-8')
 #        entete=self.LaStructure()+"plot \"dataSc\" matrix u ($1*{}+{}):($2*{}+{}):($3) w image".format(dX,X0,dY,Y0)
 #        np.savetxt("dataSc",self.lesSc.T,fmt='%.2g',header=entete)
