@@ -3,19 +3,20 @@
 import tkinter as tk
 #from tkinter.ttk import *
 class LaFrame(tk.Frame):
-    def __init__(self,master,fname,x,y):
+    def __init__(self,master,fname,x,y,Dir_label):
         self.master = master
         tk.Frame.__init__(self, self.master)
-        self.configure_gui(fname,x,y)
+        self.configure_gui(fname,x,y,Dir_label)
         self.create_widgets()
 
     def _close(self):
         self.destroy()
 
-    def configure_gui(self,fname,x,y):
+    def configure_gui(self,fname,x,y,Dir_label):
         self.FileName=fname
         self.x_cut=x
         self.y_cut=y
+        self.dir_label=Dir_label
         return 1       
     
     def create_widgets(self):
@@ -23,14 +24,18 @@ class LaFrame(tk.Frame):
         mfr.pack(side=tk.LEFT,fill=tk.X,expand=1)
         #-----------------------------------
         ligne=0
+        tk.Label(mfr,textvariable=self.dir_label).grid(row = ligne, column=
+                0,columnspan=8)
+        ligne=1
         tk.Label(mfr,text='Filename\n to save').grid(row = ligne, column= 0)#,columnspan=3)
         tk.Entry(mfr, width=12, borderwidth=5, textvariable=self.FileName).grid(row=ligne, column=1, padx=5, pady=5)
+
         #-----------------------------------
-        ligne=1
+        ligne=2
         tk.Label(mfr,text='xcut  ').grid(row = ligne, column= 0)#,columnspan=3)
         tk.Entry(mfr, width=5, borderwidth=5, textvariable=self.x_cut).grid(row=ligne, column=1, padx=5, pady=5)
         #-----------------------------------
-        ligne=2
+        ligne=3
         tk.Label(mfr,text='ycut  ').grid(row = ligne, column= 0)#,columnspan=3)
         tk.Entry(mfr, width=5, borderwidth=5, textvariable=self.y_cut).grid(row=ligne, column=1, padx=5, pady=5)
         return mfr
@@ -38,7 +43,7 @@ class LaFrame(tk.Frame):
 if __name__ == '__main__':
    root = tk.Tk()
    main_app =LaFrame(root,\
-           tk.StringVar(),tk.DoubleVar(),tk.DoubleVar()
+           tk.StringVar(),tk.DoubleVar(),tk.DoubleVar(),tk.StringVar()
            )
    root.mainloop()
 

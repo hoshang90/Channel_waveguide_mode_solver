@@ -41,6 +41,7 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         self.grating_period = DoubleVar();self.grating_period.set(0.83);self.diffraction_mode = IntVar();self.diffraction_mode.set(1);
         self.Nmodes = IntVar();self.Nmodes.set(2)
         self.FileName=StringVar();self.FileName.set("filename.ecc")
+        self.dir_label=StringVar();self.dir_label.set((os.getcwd()+"/"+self.FileName.get()).replace(os.sep, '/'))
         self.WorkDir=StringVar()
         #for the profile
         self.x_cut = DoubleVar();self.x_cut.set(3.1);self.y_cut = DoubleVar();self.y_cut.set(2.3)
@@ -78,7 +79,7 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
                 self.H1_1, self.H1_2, self.LC_1,self.LC_2, self.H2value\
                 ).pack(side=LEFT)
         FrameFileNameXY.LaFrame(tf2,\
-                self.FileName, self.x_cut, self.y_cut).pack(side=LEFT)
+                self.FileName, self.x_cut, self.y_cut,self.dir_label).pack(side=LEFT)
        
         bf2=ttk.Frame(f2)
         bf2.pack(side=BOTTOM)
@@ -94,11 +95,14 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
 
     def ButtonsMapping(self,topframe):
         frame=Frame(topframe, bd=3,pady=2)
+        self.Save_as_en=Button(topframe, text="Save As",command=lambda:self.file_save_as());self.Save_as_en.pack(side=LEFT)
         Button(topframe, text="Simulate", fg='Green', command=self.Simulate).pack(side=LEFT)
         Button(topframe, text="Browse A File", command=self.fileDialog).pack(side=LEFT)
-        Button(topframe, text="Plot Ecc.", command=self.plot_simulate_ecc).pack(side=LEFT)
+        Button(topframe, text="Plot Ecc.",command=lambda:self.plot_simulate_ecc()).pack(side=LEFT)
+        Button(topframe, text="Plot S3",command=lambda:self.plot_simulate_ecc(What_plot='S3')).pack(side=LEFT)
         Button(topframe, text="Plot \u0394n", command=self.plot_simulate_dn).pack(side=LEFT)
-        Button(topframe, text="Plot profile",fg='green', command=self.plot_line_profile).pack(side=LEFT)
+        Button(topframe, text="Plot profile_ecc",fg='green', command=lambda:self.plot_line_profile()).pack(side=LEFT)
+        Button(topframe, text="Plot profile_S3",fg='green', command=lambda:self.plot_line_profile(What_plot='S3')).pack(side=LEFT)
         return frame
 
     def Plot_indices(self):
@@ -123,11 +127,20 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
                 self.H1_1.set(self.dimentions_var[3]);self.H1_2.set(self.dimentions_var[4])
             else:
                 messagebox.showinfo("Warning",'please check your file to see if the dimentions are in line 15')
-
         else:
             messagebox.showinfo("Warning",'Please choose a file to plot')
-
-    def plot_line_profile(self):
+    def file_save_as(self):
+        """Ask the user where to save the file and save it there. 
+        Returns True if the file was saved, and False if the user
+        cancelled the dialog.
+        """
+        self.save_as_path =filedialog.askdirectory(initialdir=os.getcwd(),title="Select As")#,filetypes=("json", "*.json")
+        if self.save_as_path:
+            os.chdir(self.save_as_path)
+            self.dir_label.set((os.getcwd()+"/"+self.FileName.get()).replace(os.sep, '/'))
+        else:
+            messagebox.showinfo("Warning",'Please try again to save the file')
+    def plot_line_profile(self,What_plot='ecc'):
         fig, main_ax = plt.subplots(figsize=(6, 6))
         divider = make_axes_locatable(main_ax)
         top_ax = divider.append_axes("top", 1.05, pad=0.1, sharex=main_ax)
@@ -137,11 +150,10 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         self.w_array = np.arange(self.LC_1.get(), self.LC_2.get(),0.1)  # introduce the x axis scale (xmin,xmax,step) we should know all these three parameters from the file we introduce in the  next step
         self.h_array = np.arange(self.H1_1.get(),self.H1_2.get(), 0.1)  # introduce the y axis scale (ymin,ymax,step)
         self.DnCB=((0.001*(float(self.WL.get()))*float(self.OPR.get()))/180)
-        ecc = (self.DnCB / (self.dr + np.sqrt(self.DnCB ** 2 + self.dr ** 2)))  # define eccentricity matrix
+        ecc = (self.DnCB/(self.dr+np.sqrt(self.DnCB**2+self.dr**2)))  # define eccentricity matrix
         # make some labels invisible
         top_ax.xaxis.set_tick_params(labelbottom=False)
         right_ax.yaxis.set_tick_params(labelleft=False)
-
         main_ax.set_xlabel('W (\u03BCm)')
         main_ax.set_ylabel('H (\u03BCm)')
         top_ax.set_ylabel(r'E$_{cc}$')
@@ -149,8 +161,9 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         z_max = 1  # z.max()
         self.curX = np.around(float(self.curX), 2)
         self.curY = np.around(float(self.curY), 2)
-        # print((ecc[(np.argmax(np.where(np.around(self.w_array,2)==self.curY,self.w_array,0))),:]))############################
-        im = main_ax.imshow(self.DnCB / (self.dr + np.sqrt(self.DnCB**2 + self.dr**2)),cmap="nipy_spectral", extent=[self.LC_1.get(), self.LC_2.get(), self.H1_1.get(),self.H1_2.get()], origin='lower')
+        if What_plot=='S3':
+            ecc=np.sin(2*np.arctan((np.real(ecc))**-1)) # this line is to plot S3
+        im = main_ax.imshow(ecc,cmap="nipy_spectral", extent=[self.LC_1.get(), self.LC_2.get(), self.H1_1.get(),self.H1_2.get()], origin='lower')
         main_ax.autoscale(enable=False)
         right_ax.autoscale(enable=False)
         top_ax.autoscale(enable=False)
@@ -158,30 +171,36 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         top_ax.set_ylim(top=z_max)
         self.v_line = main_ax.axvline(self.curX, color='b')
         self.h_line = main_ax.axhline(self.curY, color='g')
-        # print(ecc[:,(np.argmax(np.where(np.around(self.w_array,2)==self.curY,self.w_array,0)))])#############################
         self.v_prof, = right_ax.plot(ecc[:, (np.argmax(np.where(np.around(self.w_array, 2) == self.curX, self.w_array, 0)))], self.h_array,'b-')  # (np.argmax(np.where(np.around(self.h_array,2)==self.curY,self.h_array,0)))
         self.h_prof, = top_ax.plot(self.w_array, ecc[(np.argmax(np.where(np.around(self.h_array, 2) == self.curY, self.h_array, 0))), :],'g-')  # (np.argmax(np.where(np.around(self.w_array,2)==self.curX,self.w_array,0)))
-        # define the colorbar##################################
-        cax = divider.new_vertical(size="5%", pad=0.4, title="Eccentricity")
+        if What_plot=='S3':
+            cax = divider.new_vertical(size="5%", pad=0.4, title="Stokes parameter S3")
+        else:
+            cax = divider.new_vertical(size="5%", pad=0.4, title="Eccentricity")
         fig.add_axes(cax)
         fig.colorbar(im, cax=cax, orientation="horizontal")
         cax.set_xlim(0, 1)
         cax.set
         # plt.savefig('colorbar_positioning_03.png', format='png', bbox_inches='tight')##################
         plt.show()
-
-    def plot_simulate_ecc(self):
+    def plot_simulate_ecc(self,What_plot='ecc'):
         if self.vSimulat:
             fig, self.ax = plt.subplots(figsize=(8, 6))
             #plt.title("Eccentricy as a function of channel dimensions")
             print("Optcal rotaion is: "+ str(self.OPR.get()))
             self.DnCB=((0.001*(float(self.WL.get()))*float(self.OPR.get()))/180)
             print("Circular bireferengence (CB) is: "+ str(self.DnCB))
-            im = plt.imshow(self.DnCB / (self.dr + np.sqrt(self.DnCB**2 + self.dr**2)),cmap="nipy_spectral", extent=[self.LC_1.get(), self.LC_2.get(), self.H1_1.get(),self.H1_2.get()], origin='lower')
+            ecc=self.DnCB / (self.dr + np.sqrt(self.DnCB**2 + self.dr**2))
+            if What_plot=='S3':
+                ecc=np.sin(2*np.arctan((np.real(ecc))**-1)) # this line is to plot S3
+            im = plt.imshow(ecc,cmap="nipy_spectral", extent=[self.LC_1.get(), self.LC_2.get(), self.H1_1.get(),self.H1_2.get()], origin='lower')
             plt.xlabel('W (\u03BCm)')
             plt.ylabel('H (\u03BCm)')
             divider = make_axes_locatable(self.ax)
-            cax = divider.new_vertical(size="5%", pad=0.4, title="Eccentricity")
+            if What_plot=='S3':
+                cax = divider.new_vertical(size="5%", pad=0.4, title="Stokes parameter S3")
+            else:
+                cax = divider.new_vertical(size="5%", pad=0.4, title="Eccentricity")
             fig.add_axes(cax)
             fig.colorbar(im, cax=cax, orientation="horizontal")
 ###################################################################################################### mshu x y labela wash karw
@@ -221,7 +240,6 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         # Button(self.root,text = 'Click Me', command=lambda:[self.funcA(), self.funcB(), self.funcC()])
         self.master.destroy()
         plt.close('all')
-
     def Solve(self):
         self.g = Channel(wl=self.WL.get(), pas=0.1, \
                        nc=self.nC_1.get(), nc_2=self.nC_2.get(), nc_3=self.nC_3.get(), Hc=0.8, \
