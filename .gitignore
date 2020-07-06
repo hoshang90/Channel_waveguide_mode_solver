@@ -2,4 +2,3 @@ venv/
 .idea/
 *.npy
 __pycache__/
-*.ecc
