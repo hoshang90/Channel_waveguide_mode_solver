@@ -9,7 +9,7 @@
 #---------------------------------------------------------------
 # generation du profile: ipython3 profile create ridge
 # puis editer .ipython/profile_ridge/ipython_config.py
-
+import sys
 import numpy as np
 import EMpy
 import matplotlib.pyplot as plt
@@ -35,10 +35,10 @@ class Channel():
       nsub    |  nsub_2  | nsub_3,Hsub
     _______________________________________
     """
-    def __init__(self,wl=0.64,pas=0.16,nc=1., nc_2=1., nc_3=1.,Hc=0.8,\
+    def __init__(self,wl=0.64,pas=0.1,nc=1., nc_2=1., nc_3=1.,Hc=0.8,\
             LB=5, LC=3.1,LB_R=5,n1B=1.,n1C=1.620,n1D=1.,H1=2.3,\
             n2B=1.62,n2C=1.62,n2D=1.62,H2=2.,\
-            nsub=1.61,nsub_2=1.61,nsub_3=1.61,Hsub=2.,OR=4):
+            nsub=1.61,nsub_2=1.61,nsub_3=1.61,Hsub=2.,OR=2.5):
         self.Hc=Hc
         self.nc2=nc**2;self.nc2_2 = nc_2**2 ;self.nc2_3 = nc_3**2
         self.LB=LB;self.LB_R=LB_R;self.LC=LC
@@ -51,9 +51,9 @@ class Channel():
         self.pas=pas
         self.OR=OR
 
-        self.initGrille()
-        print("Grille {}x{} micron2".format(self.LargGrille,self.HautGrille))
-        print("pas={}, Npts={}".format(self.pas,self.x.size*self.y.size))
+      #  self.initGrille()
+      #  print("Grille {}x{} micron2".format(self.LargGrille,self.HautGrille))
+      #  print("pas={}, Npts={}".format(self.pas,self.x.size*self.y.size))
   
     def initGrille(self):
         ''' Initizalisation de la grille de calcul '''
@@ -69,18 +69,24 @@ class Channel():
         neffplanMax=self.NmaxPlan()
         for i in range(Nmodes):
             neff=self.sol.modes[i].neff
-            reponse+="*Mode[{}]: neff={:.3f}, ".format(i,neff)
-            reponse+="%TE= {:.2f}, ".format(100*self.sol.modes[i].TEfrac())
+            reponse+="*Mode[{}]: neff={:.5f}, ".format(i,neff)
+            reponse+="%TM= {:.2f}, ".format(100*np.around(self.sol.modes[i].TEfrac(),decimals=2))
             reponse+="%Conf= {:.2f}".format(100*self.Confinement(Nmode=i))
             if neff<neffplanMax:
                 reponse+=" Leak "
             reponse+="\n"
-        DN=self.sol.modes[0].neff-self.sol.modes[1].neff
-        reponse+="n0-n1={:g}, ".format(DN)
+        if 100*np.around(self.sol.modes[0].TEfrac(),decimals=2)>50:# it is TM and we want TE-TM
+            DN=(self.sol.modes[1].neff-self.sol.modes[0].neff)
+        else:
+            DN=self.sol.modes[0].neff-self.sol.modes[1].neff
+        reponse+="TE0-TM0={:g}, ".format(DN)
         CB=self.OR*1e-3/180*self.wl
+        reponse+="  CB={:g}\n".format(CB)
         ecc=CB/(DN+np.sqrt(CB*CB+DN*DN))
-        reponse+="ecc={:.3f}\n".format(ecc)
+        reponse+="ecc={:.3f}, ".format(ecc)
+        reponse+="tan(theta)= {:.3f}\n".format(CB/DN)
         reponse+="S3={:.3f},{:.3f}\n".format(np.sin(2*np.arctan((np.real(ecc))**-1)),np.sin(2*np.arctan(np.real(ecc))))
+        reponse+="S3={:.3f}\n".format(np.sin(np.arctan(CB/DN)))
         return reponse
 
     def NumOf_guidedModes(self,Nmodes=2): # to get a list of (all guided modes, not leaky modes).
@@ -104,24 +110,24 @@ class Channel():
         """ Dessine la structure sur le terminal """
         reponse = " \n"
         reponse += "." * 20 + " All units are in (" + '\u03BCm' + ") " + "." * 19 + "\n"
-        reponse += "|<--LB={} -->| <----  LC={} ---->| <------ LB_R={} ------>|\n".format(self.LB, self.LC, self.LB_R)
-        reponse += "|<--nc={:.3f},>| <---- nc_2={:.3f}-->| <--nc_3={:.3f}, Hc={}-->| \n". \
+        reponse += "|<--LB={:.1f} -->| <----  LC={:.1f} ---->| <------ LB_R={:.1f} ------>|\n".format(self.LB, self.LC, self.LB_R)
+        reponse += "|<--nc={:.3f},>| <---- nc_2={:.3f}-->| <--nc_3={:.3f}, Hc={:.1f}-->| \n". \
             format(np.sqrt(self.nc2_3), np.sqrt(self.nc2_2), np.sqrt(self.nc2), self.Hc)
         reponse += "|" + "-" * 60 + "|" + "\n"
         # reponse+=" "*12+"-"*14+"\n"
-        reponse += "|<-n1B={:.3f},>| <----- n1C={:.3f}-->| <---n1D={:.3f}, H1={}-->| \n". \
+        reponse += "|<-n1B={:.3f},>| <----- n1C={:.3f}-->| <---n1D={:.3f}, H1={:.1f}-->| \n". \
             format(np.sqrt(self.n1D2), np.sqrt(self.n1C2), np.sqrt(self.n1B2), self.H1)
         reponse += "|" + "-" * 60 + "|" + "\n"
-        reponse += "|<-n2B={:.3f},>| <----- n2C={:.3f}-->| <---n2D={:.3f}, H2={}-->| \n". \
+        reponse += "|<-n2B={:.3f},>| <----- n2C={:.3f}-->| <---n2D={:.3f}, H2={:.1f}-->| \n". \
             format(np.sqrt(self.n2D2), np.sqrt(self.n2C2), np.sqrt(self.n2B2), self.H2)
         reponse += "|" + "-" * 60 + "|" + "\n"
-        reponse += "|<-nsub={:.3f},>| <--nsub_2={:.3f}-->| <nsub_3={:.3f},Hsub={}->| \n". \
+        reponse += "|<-nsub={:.3f},>| <--nsub_2={:.3f}-->| <nsub_3={:.3f},Hsub={:.1f}->| \n". \
             format(np.sqrt(self.ns2_3), np.sqrt(self.ns2_2), np.sqrt(self.ns2), self.Hsub)
         reponse += "." * 62 + "\n"
         reponse += " \n"
         return reponse
 
-    def Calcule(self,Nmodes=2,verbose=True,trace=True):
+    def Calcule(self,Nmodes=2,verbose=True,trace=True, traceMode=True):
         neigs=Nmodes
         self.initGrille()
         tol=1e-9
@@ -132,6 +138,8 @@ class Channel():
             print(self.__repr__())
         if trace:
             self.Intensite()
+        if traceMode:
+            self.TraceMode()
 
     def epsfunc(self,x_, y_):
         """Return a matrix describing a 2d material.
@@ -182,6 +190,7 @@ class Channel():
 
     def Traceindice(self):
         ''' plot l'indice '''
+        self.initGrille()
         indices=self.epsfunc(self.x,self.y)
         levels=np.sqrt([1,self.nc2, self.nc2_2, self.nc2_3,self.n1B2,self.n1C2, self.n1D2,self.n2B2,self.n2C2, self.n2D2,self.ns2, self.ns2_2, self.ns2_3])
         fig=plt.figure()
@@ -214,8 +223,7 @@ class Channel():
         plt.contour(self.x,self.y,self.epsfunc(self.x,self.y).T,levels,colors='white')
         plt.contourf(x0,y0 ,Itot.T, Nlevel)
         print("%Conf: {:.2f}".format(100*self.Confinement(Nmode=Nmode)))
-        print("%TE: {:.1f}".format(100*self.sol.modes[Nmode].TEfrac()))
-        #return Itot
+        print("%TM= {:.2f}".format(100*np.around(self.sol.modes[Nmode].TEfrac(),decimals=2)))
 
     def Confinement(self,Nmode=0):
         ''' retourne  I(cover)/Itotale '''
@@ -274,7 +282,7 @@ class Channel():
         plt.title('Hz')
         plt.colorbar()
 
-        plt.show()
+        print("%TM= {:.2f}".format(100*np.around(self.sol.modes[Nmode].TEfrac(),decimals=2)))
 
     def TraceEx(self,Nmode=0):
         ''' Trace le profil de Ex au milieu du guide'''
@@ -290,27 +298,46 @@ class Channel():
         plt.xlabel(r'$\mu m$')
         plt.show()
 
-    def VariaX(self,X0=0.1, X1=5, dX=0.2,variable='LC',trace=True,fich="DataDn"):
+    def VariaX(self,X0=0.1, X1=5, dX=0.2,variable='LC',trace=True,Show_Struct=False,SaveFile=True,fich="DataDn"):
         ''' calcule Dn et Sc en bouclant sur la variable consideree: 
             retourne les tableaux 1D Dn et Sc
             avec trace, trace la courbe
             pour sauver: np.savetxt("file",tableau,fmt="%.2g") '''
         lesX=np.arange(X0,X1,dX)
+        lesTE0=np.zeros((lesX.size))
+        lesTM0=np.zeros((lesX.size))
         lesDn=np.zeros((lesX.size))
         lesSc=np.zeros((lesX.size))
         for i,X in enumerate(lesX):
             self.FixeVariable(X,variable)
-            self.Calcule(verbose=False)
-            dn=self.sol.modes[0].neff-self.sol.modes[1].neff
+            self.Calcule(verbose=False,trace=False,traceMode=False)
+            if 100*np.around(self.sol.modes[0].TEfrac(),decimals=2)>50:# it is TM and we want TE-TM
+                TE0,TM0=self.sol.modes[1].neff,self.sol.modes[0].neff
+                dn=TE0-TM0#self.sol.modes[1].neff-self.sol.modes[0].neff
+            else:
+                TE0,TM0=self.sol.modes[0].neff,self.sol.modes[1].neff
+                dn=TE0-TM0#self.sol.modes[1].neff-self.sol.modes[0].neff
             Sc=self.Confinement()
-            lesDn[i]=dn
+            lesTE0[i]=np.real(TE0)
+            lesTM0[i]=np.real(TM0)
+            lesDn[i]=np.real(dn)
             lesSc[i]=Sc
-            print(variable,"={:.2f} => 10^4 dn={:.2g},%Sc={:.3f}".format(X,1e4*dn,100*Sc))
+            print(variable,"={:.4f} => TE0= {:.6f}, TM0= {:.6f}".format(X,np.real(TE0),np.real(TM0)))
+            print(variable,"={:.4f} => TE0-TM0={:.2g}X10^-5,%Sc={:.3f}".format(X,1e5*dn,100*Sc))
+            if Show_Struct:
+                print(self.__repr__())
         if trace:
+            fig0=plt.figure()
+            plt.plot(lesX,lesTE0, label='TE0')
+            plt.plot(lesX,lesTM0,label='TM0')
+            plt.ylabel('TE0 & TM0 n_eff')
+            plt.xlabel(variable)
+            plt.title("TE0 & TM0 dispersion curves")
+            plt.legend()
             fig = plt.figure(figsize=(12, 6))
             fig.add_subplot(2,1,1)
-            plt.plot(lesX,1e4*np.abs(lesDn))
-            plt.ylabel("10^4*Dn")
+            plt.plot(lesX,1e5*lesDn)
+            plt.ylabel("10^-5*Dn")
             plt.grid(True)
             plt.xlabel(variable)
             fig.add_subplot(2,1,2)
@@ -319,10 +346,22 @@ class Channel():
             plt.grid(True)
             plt.xlabel(variable)
             plt.show()
-        return (lesDn,lesSc)
+        if SaveFile:
+            entete=self.LaStructure()
+            entete+='the data saved as column stack to be plotted easily with gnuplot'
+            entete+="to plot with plt we need plt.plot(np.loadtxt('Data_of_TE0&TM0').T[0],"+"\n"+\
+                    "np.loadtxt('Data_of_TE0&TM0').T[2]); plt.plot(np.loadtxt('Data_of_TE0&TM0').T[0],"+"\n"+\
+                    "np.loadtxt('Data_of_TE0&TM0').T[1]);plt.show()"+"\n"+"\n"
+            entete1=entete+variable+"---TE0---TM0"
+            entete2=entete+variable+"---Dn---Sc"
+            np.savetxt(fich+"_of_TE0&TM0",np.column_stack([lesX,lesTE0,lesTM0]),fmt='%.7f',\
+                    header=entete1, encoding='utf-8')    
+            np.savetxt(fich+"_of_Dn&Sc",np.column_stack([lesX,lesDn,lesSc]),fmt='%.2g',\
+                    header=entete2, encoding='utf-8')    
+        return (lesTE0,lesTM0,lesDn,lesSc)
 
     def VariaXY(self,X0=0.1, X1=5,
-            dX=0.2,vX='LC',Y0=0.1,Y1=5,dY=0.2,vY='H1',fich="dataDn"):
+            dX=0.2,vX='LC',Y0=0.1,Y1=5,dY=0.2,vY='H1',TE0TM0=False,fich="dataDn"):
         """ idem VariaX mais deux boucles imbriquees """
         lesX=np.arange(X0,X1,dX)
         lesY=np.arange(Y0,Y1,dY)
@@ -335,10 +374,18 @@ class Channel():
             t0= time.process_time()
             for j,Y in enumerate(lesY):
                 self.FixeVariable(Y,vY)
-                self.Calcule(verbose=False,trace=False)
+                self.Calcule(verbose=False,trace=False, traceMode=False)
                 #on ne garde que les solution sans leaking
-                if self.sol.modes[0].neff>self.NmaxPlan() :
-                    dn=abs(self.sol.modes[0].neff-self.sol.modes[1].neff)
+                if self.sol.modes[0].neff>self.NmaxPlan():
+                    if TE0TM0:
+                        if 100*np.around(self.sol.modes[0].TEfrac(),decimals=2)>50:# it is TM and we want TE-TM
+                            TE0,TM0=self.sol.modes[1].neff,self.sol.modes[0].neff
+                            dn=TE0-TM0                       
+                        else:
+                            TE0,TM0=self.sol.modes[0].neff,self.sol.modes[1].neff
+                            dn=TE0-TM0
+                    else:
+                        dn=abs(self.sol.modes[0].neff-self.sol.modes[1].neff)
                 else :
                     dn=-1
                # Sc=self.Confinement()
@@ -366,8 +413,19 @@ class Channel():
             self.LC=x
         elif var=='H1':
             self.H1=x
-        else :
+        elif var=='n_rib':
+            self.n1C2=x**2
+            self.n2B2=x**2;self.n2C2=x**2;self.n2D2=x**2
+        elif var=='n_sub':
+            self.ns2=x**2;self.ns2_2=x**2;self.ns2_3=x**2
+        elif var=='n_ridge':
+            self.n1C2=x**2
+            self.n2B2=self.ns2;self.n2C2=self.ns2_2;self.n2D2=self.ns2_3
+        elif var=='H2':
             self.H2=x
+        else:
+            print("please choose the good variable such as 'n_rib','n_ridge','n_sub','H1','H2', 'LC'")
+            sys.exit()
         self.initGrille()
 
 if __name__ == '__main__':

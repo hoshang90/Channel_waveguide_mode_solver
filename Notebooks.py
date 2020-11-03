@@ -40,6 +40,7 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         self.H2value=DoubleVar();self.H2value.set(1.)
         self.grating_period = DoubleVar();self.grating_period.set(0.83);self.diffraction_mode = IntVar();self.diffraction_mode.set(1);
         self.Nmodes = IntVar();self.Nmodes.set(2)
+        self.TraceMode_var=BooleanVar();self.TraceMode_var.set(False);self.TraceIntensity_var=BooleanVar();self.TraceIntensity_var.set(True)
         self.FileName=StringVar();self.FileName.set("filename.ecc")
         self.dir_label=StringVar();self.dir_label.set((os.getcwd()+"/"+self.FileName.get()).replace(os.sep, '/'))
         self.WorkDir=StringVar()
@@ -68,7 +69,7 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         FrameStruct.LaFrame(tf1,\
                 self.nC_1,self.nC_2,self.nC_3,self.nL1_1,self.nL1_2,self.nL1_3,self.nL2_1,self.nL2_2,self.nL2_3,\
                 self.nSub_1,self.nSub_2,self.nSub_3,self.TL_1,self.TL_2,self.TChan).pack()
-        FrameLbdaORMode.LaFrame(tf1,self.WL,self.OPR,self.Nmodes).pack()
+        FrameLbdaORMode.LaFrame(tf1,self.WL,self.OPR,self.Nmodes,self.TraceMode_var, self.TraceIntensity_var).pack()
         bf1=ttk.Frame(f1)
         bf1.pack(side=BOTTOM)
         self.ButtonsSimulOne(bf1).pack()
@@ -248,8 +249,7 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
                        n2B=self.nL2_1.get(), n2C=self.nL2_2.get(), n2D=self.nL2_3.get(), H2=self.TL_2.get(), \
                        nsub=self.nSub_1.get(), nsub_2=self.nSub_2.get(), nsub_3=self.nSub_3.get(), Hsub=2.,
                        OR=self.OPR.get())
-        self.g.Calcule(Nmodes=self.Nmodes.get())
-        #self.g.Intensite()
+        self.g.Calcule(Nmodes=self.Nmodes.get(),trace=self.TraceIntensity_var.get(),traceMode=self.TraceMode_var.get())
         plt.show()
 
     def NumOf_guided_modes(self): # This will print angles which can give coupled light.

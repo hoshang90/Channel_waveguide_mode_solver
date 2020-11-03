@@ -1,4 +1,7 @@
 venv/
+*~
+Data*
+*.swp
 .idea/
 *.npy
 __pycache__/

@@ -3,19 +3,21 @@
 import tkinter as tk
 #from tkinter.ttk import *
 class LaFrame(tk.Frame):
-    def __init__(self,master,lbda,OR,Nmodes):
+    def __init__(self,master,lbda,OR,Nmodes,TraceMode_var,TraceIntensity_var):
         self.master = master
         tk.Frame.__init__(self, self.master)
-        self.configure_gui(lbda,OR,Nmodes)
+        self.configure_gui(lbda,OR,Nmodes,TraceMode_var,TraceIntensity_var)
         self.create_widgets()
 
     def _close(self):
         self.destroy()
 
-    def configure_gui(self,lbda,OR,Nmodes):
+    def configure_gui(self,lbda,OR,Nmodes, TraceMode_var, TraceIntensity_var):
         self.WL=lbda
         self.OPR=OR
         self.Nmodes=Nmodes
+        self.TraceMode_var=TraceMode_var
+        self.TraceIntensity_var=TraceIntensity_var
         return 1       
     
     def create_widgets(self):
@@ -33,6 +35,10 @@ class LaFrame(tk.Frame):
         ligne=2
         tk.Label(mfr,text='# of modes').grid(row = ligne, column= 0)#,columnspan=3)
         tk.Entry(mfr, width=5, borderwidth=5, textvariable=self.Nmodes).grid(row=ligne, column=1, padx=5, pady=5)
+        #-----------------------------------
+        ligne=3
+        tk.Checkbutton(mfr,text="Trace Modes",variable=self.TraceMode_var).grid(row = ligne, column= 0)
+        tk.Checkbutton(mfr,text="Trace Intensity",variable=self.TraceIntensity_var).grid(row = ligne, column=1)
 
         return mfr
 #--------------------------------------------------------------
