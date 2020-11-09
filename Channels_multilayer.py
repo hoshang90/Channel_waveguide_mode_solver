@@ -308,15 +308,19 @@ class Channel():
         lesTM0=np.zeros((lesX.size))
         lesDn=np.zeros((lesX.size))
         lesSc=np.zeros((lesX.size))
+        lesDn_diff=np.zeros((lesX.size))
         for i,X in enumerate(lesX):
             self.FixeVariable(X,variable)
             self.Calcule(verbose=False,trace=False,traceMode=False)
-            if 100*np.around(self.sol.modes[0].TEfrac(),decimals=2)>50:# it is TM and we want TE-TM
-                TE0,TM0=self.sol.modes[1].neff,self.sol.modes[0].neff
-                dn=TE0-TM0#self.sol.modes[1].neff-self.sol.modes[0].neff
+            if self.sol.modes[0].neff>self.NmaxPlan():
+                if 100*np.around(self.sol.modes[0].TEfrac(),decimals=2)>50:# it is TM and we want TE-TM
+                    TE0,TM0=self.sol.modes[1].neff,self.sol.modes[0].neff
+                    dn=TE0-TM0#self.sol.modes[1].neff-self.sol.modes[0].neff
+                else:
+                    TE0,TM0=self.sol.modes[0].neff,self.sol.modes[1].neff
+                    dn=TE0-TM0#self.sol.modes[1].neff-self.sol.modes[0].neff
             else:
-                TE0,TM0=self.sol.modes[0].neff,self.sol.modes[1].neff
-                dn=TE0-TM0#self.sol.modes[1].neff-self.sol.modes[0].neff
+                TE0=np.NaN;TM0=np.NaN;dn=np.NaN
             Sc=self.Confinement()
             lesTE0[i]=np.real(TE0)
             lesTM0[i]=np.real(TM0)
@@ -326,6 +330,18 @@ class Channel():
             print(variable,"={:.4f} => TE0-TM0={:.2g}X10^-5,%Sc={:.3f}".format(X,1e5*dn,100*Sc))
             if Show_Struct:
                 print(self.__repr__())
+        if variable == "n_rib" or variable == "n_ridge":
+            lesDn_diff=[np.abs(np.sqrt(self.ns2_3)-i) for i in lesX]
+        elif variable == "n_sub":
+            lesDn_diff=[np.abs(np.sqrt(self.n1C2)-i) for i in lesX]
+        if SaveFile:
+            entete=self.LaStructure()
+            entete+="the data saved as column stack to be plotted easily with gnuplot"+"\n"
+            entete1=entete+variable+"X---TE0---TM0---Dn---Sc---DnDiff"
+            np.savetxt(fich+"_of_"+"TE0&TM0_"+variable+"_"+str(X0)+"-"+str(X1)+".TE0TM0",np.column_stack([lesX,lesTE0,lesTM0,lesDn,lesSc,lesDn_diff]),fmt='%.9f',\
+                    header=entete1, encoding='utf-8')    
+           # np.savetxt(fich+"_of_"+"Dn&Sc_"+variable+"_"+str(X0)+"-"+str(X1)+".DnSc",np.column_stack([lesX,lesDn,lesSc]),fmt='%.2g',\
+            #       header=entete2, encoding='utf-8')    
         if trace:
             fig0=plt.figure()
             plt.plot(lesX,lesTE0, label='TE0')
@@ -346,18 +362,6 @@ class Channel():
             plt.grid(True)
             plt.xlabel(variable)
             plt.show()
-        if SaveFile:
-            entete=self.LaStructure()
-            entete+='the data saved as column stack to be plotted easily with gnuplot'
-            entete+="to plot with plt we need plt.plot(np.loadtxt('Data_of_TE0&TM0').T[0],"+"\n"+\
-                    "np.loadtxt('Data_of_TE0&TM0').T[2]); plt.plot(np.loadtxt('Data_of_TE0&TM0').T[0],"+"\n"+\
-                    "np.loadtxt('Data_of_TE0&TM0').T[1]);plt.show()"+"\n"+"\n"
-            entete1=entete+variable+"---TE0---TM0"
-            entete2=entete+variable+"---Dn---Sc"
-            np.savetxt(fich+"_of_TE0&TM0",np.column_stack([lesX,lesTE0,lesTM0]),fmt='%.7f',\
-                    header=entete1, encoding='utf-8')    
-            np.savetxt(fich+"_of_Dn&Sc",np.column_stack([lesX,lesDn,lesSc]),fmt='%.2g',\
-                    header=entete2, encoding='utf-8')    
         return (lesTE0,lesTM0,lesDn,lesSc)
 
     def VariaXY(self,X0=0.1, X1=5,
@@ -413,6 +417,8 @@ class Channel():
             self.LC=x
         elif var=='H1':
             self.H1=x
+        elif var=='nc':
+            self.nc2=x**2;self.nc2_2 = x**2 ;self.nc2_3 = x**2
         elif var=='n_rib':
             self.n1C2=x**2
             self.n2B2=x**2;self.n2C2=x**2;self.n2D2=x**2
@@ -424,7 +430,7 @@ class Channel():
         elif var=='H2':
             self.H2=x
         else:
-            print("please choose the good variable such as 'n_rib','n_ridge','n_sub','H1','H2', 'LC'")
+            print("please choose the good variable such as 'nc', 'n_rib','n_ridge','n_sub','H1','H2', 'LC'")
             sys.exit()
         self.initGrille()
 

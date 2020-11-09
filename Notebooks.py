@@ -16,6 +16,7 @@ import FrameStruct
 import FrameLbdaORMode
 import FrameMapping
 import FrameFileNameXY
+import FrameVariable
 
 class Mul_Ch_Wav_Mod_Sol(Frame):
     def __init__(self, master):
@@ -46,8 +47,12 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         self.WorkDir=StringVar()
         #for the profile
         self.x_cut = DoubleVar();self.x_cut.set(3.1);self.y_cut = DoubleVar();self.y_cut.set(2.3)
-        #self.vVaryH1LC_SaveAs_loc = StringVar();self.vVaryH1LC_SaveAs_loc.set('C:/Users/Home')#location to save
-        #self.create_buttons()
+        self.Var_var=StringVar();self.Var_var.set("n_rib");self.X1_var=DoubleVar();self.X1_var.set(1.614)
+        self.X2_var=DoubleVar();self.X2_var.set(1.62);self.dX_var=DoubleVar();self.dX_var.set(0.001)
+        self.FileName_var=StringVar();self.FileName_var.set("Data");self.Show_Struct_var=BooleanVar()
+        self.Show_Struct_var.set(False);self.SaveFile_var=BooleanVar();self.SaveFile_var.set(True)
+        self.Dn_diff_var=BooleanVar();self.Dn_diff_var.set(False)
+        self.dir_label_var=StringVar();self.dir_label_var.set((os.getcwd()+"/"+self.FileName_var.get()).replace(os.sep, '/'))
 
     def create_widgets(self):
         topframe=Frame(self.master)
@@ -55,8 +60,10 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         nbook=ttk.Notebook(topframe)
         f1=ttk.Frame(nbook)
         f2=ttk.Frame(nbook)
+        f3=ttk.Frame(nbook)
         nbook.add(f1,text="Simulation")
         nbook.add(f2,text="Mapping")
+        nbook.add(f3,text="Variable effect")
         nbook.pack()
         FrameDessous=Frame(self.master)
         FrameDessous.pack(side=BOTTOM)
@@ -81,11 +88,19 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
                 ).pack(side=LEFT)
         FrameFileNameXY.LaFrame(tf2,\
                 self.FileName, self.x_cut, self.y_cut,self.dir_label).pack(side=LEFT)
-       
         bf2=ttk.Frame(f2)
         bf2.pack(side=BOTTOM)
         self.ButtonsMapping(bf2).pack()
-
+        #----------- tab 3 ------------ frame f3
+        tf3=ttk.Frame(f3)
+        tf3.pack()
+        FrameVariable.LaFrame(tf3,\
+               self.Var_var,self.X1_var,self.X2_var,self.dX_var,self.dir_label_var,self.FileName_var\
+               ,self.Show_Struct_var,self.SaveFile_var,self.Dn_diff_var
+                ).pack(side=LEFT)
+        bf3=ttk.Frame(f3)
+        bf3.pack(side=BOTTOM)
+        self.ButtonsVariable(bf3).pack()
 
     def ButtonsSimulOne(self,topframe):
         frame=Frame(topframe, bd=3,pady=2)
@@ -98,12 +113,20 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         frame=Frame(topframe, bd=3,pady=2)
         self.Save_as_en=Button(topframe, text="Save As",command=lambda:self.file_save_as());self.Save_as_en.pack(side=LEFT)
         Button(topframe, text="Simulate", fg='Green', command=self.Simulate).pack(side=LEFT)
-        Button(topframe, text="Browse A File", command=self.fileDialog).pack(side=LEFT)
+        Button(topframe, text="Browse A File", command=lambda:self.my_fileDialog(tab="Mapping")).pack(side=LEFT)
         Button(topframe, text="Plot Ecc.",command=lambda:self.plot_simulate_ecc()).pack(side=LEFT)
         Button(topframe, text="Plot S3",command=lambda:self.plot_simulate_ecc(What_plot='S3')).pack(side=LEFT)
         Button(topframe, text="Plot \u0394n", command=self.plot_simulate_dn).pack(side=LEFT)
         Button(topframe, text="Plot profile_ecc",fg='green', command=lambda:self.plot_line_profile()).pack(side=LEFT)
         Button(topframe, text="Plot profile_S3",fg='green', command=lambda:self.plot_line_profile(What_plot='S3')).pack(side=LEFT)
+        return frame
+
+    def ButtonsVariable(self,topframe):
+        frame=Frame(topframe, bd=3,pady=2)
+        Button(topframe, text="Simulate",command=lambda:self.Simulate_Var()).pack(side=LEFT)
+        Button(topframe, text="Browse A File", command=lambda:self.my_fileDialog(tab="Variable")).pack(side=LEFT)
+        #Button(topframe, text="Plot DnSc",command=lambda:self.plot_simulate_ecc()).pack(side=LEFT)
+        Button(topframe, text="Plot TE0TM0",fg='green', command=lambda:self.plot_Varibale(to_Plot="TE0TM0")).pack(side=LEFT)
         return frame
 
     def Plot_indices(self):
@@ -116,20 +139,29 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
                        OR=self.OPR.get())
         self.g.Traceindice()
 
-    def fileDialog(self): # to brows the file
-        self.vSimulat = filedialog.askopenfilename(initialdir=os.getcwd(), title="Select A File",filetypes=[('ecc',"*.ecc"),('All files', '*')])
-        if self.vSimulat:
-            self.dr=np.loadtxt(self.vSimulat, delimiter=' ', comments='#')#self.df.to_numpy()
-            self.line15=open(self.vSimulat, "r").readlines()[15]
-            if 'Dimentions of the graph are:' in self.line15:
-                X=self.line15.strip('#');X=X.strip('Dimentions of the graph are:');X=X.strip('\n')
-                self.dimentions_var=np.fromstring(X, dtype=np.float, sep=',')
-                self.LC_1.set(self.dimentions_var[0]);self.LC_2.set(self.dimentions_var[1])
-                self.H1_1.set(self.dimentions_var[3]);self.H1_2.set(self.dimentions_var[4])
+    def my_fileDialog(self,tab="Mapping"): # to brows the file
+        if tab == "Mapping":
+            self.vSimulat = filedialog.askopenfilename(initialdir=os.getcwd(),\
+                    title="Select A File",filetypes=[('ecc',"*.ecc"),('All files', '*')])
+            if self.vSimulat:
+                self.dr=np.loadtxt(self.vSimulat, delimiter=' ', comments='#')#self.df.to_numpy()
+                self.line15=open(self.vSimulat, "r").readlines()[15]
+                if 'Dimentions of the graph are:' in self.line15:
+                    X=self.line15.strip('#');X=X.strip('Dimentions of the graph are:');X=X.strip('\n')
+                    self.dimentions_var=np.fromstring(X, dtype=np.float, sep=',')
+                    self.LC_1.set(self.dimentions_var[0]);self.LC_2.set(self.dimentions_var[1])
+                    self.H1_1.set(self.dimentions_var[3]);self.H1_2.set(self.dimentions_var[4])
+                else:
+                    messagebox.showinfo("Warning",'please check your file to see if the dimentions are in line 15')
             else:
-                messagebox.showinfo("Warning",'please check your file to see if the dimentions are in line 15')
-        else:
-            messagebox.showinfo("Warning",'Please choose a file to plot')
+                messagebox.showinfo("Warning",'Please choose a file to plot')
+        elif tab== "Variable":
+            self.Browse_var=filedialog.askopenfilename(initialdir=os.getcwd(),\
+                    title="Select A File",filetypes=[('TE0TM0',"*.TE0TM0"),('All files', '*')])
+            if self.Browse_var:
+                self.DnSc_TE0TM0=np.loadtxt(self.Browse_var, delimiter=' ', comments='#')#self.df.to_numpy()
+            else:
+                messagebox.showinfo("Warning",'Please choose a file to plot')
     def file_save_as(self):
         """Ask the user where to save the file and save it there. 
         Returns True if the file was saved, and False if the user
@@ -231,6 +263,33 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
             plt.close()
         else:
             messagebox.showinfo("Warning",'Please choose a file to plot')
+    def plot_Varibale(self,to_Plot="TE0TM0"):
+        if self.DnSc_TE0TM0 is not None and to_Plot=="TE0TM0":
+            if self.Dn_diff_var.get() is True:
+                plt.plot(self.DnSc_TE0TM0.T[5], self.DnSc_TE0TM0.T[1],label="TE0")
+                plt.plot(self.DnSc_TE0TM0.T[5], self.DnSc_TE0TM0.T[2],label="TM0")
+                plt.xlabel(self.Var_var.get()+"_difference")               
+            else:
+                plt.plot(self.DnSc_TE0TM0.T[0], self.DnSc_TE0TM0.T[1],label="TE0")
+                plt.plot(self.DnSc_TE0TM0.T[0], self.DnSc_TE0TM0.T[2],label="TM0")
+                plt.xlabel(self.Var_var.get())
+            plt.ylabel('TE0 & TM0 n_eff')
+            plt.title("TE0 & TM0 dispersion curves")
+            plt.legend()
+            fig = plt.figure(figsize=(12, 6))
+            fig.add_subplot(2,1,1)
+            plt.plot(self.DnSc_TE0TM0.T[0],1e5*self.DnSc_TE0TM0.T[3])
+            plt.ylabel("10^-5*Dn")
+            plt.grid(True)
+            plt.xlabel(self.Var_var.get())
+            fig.add_subplot(2,1,2)
+            plt.plot(self.DnSc_TE0TM0.T[0],100*self.DnSc_TE0TM0.T[4])
+            plt.ylabel("100*Sc")
+            plt.grid(True)
+            plt.xlabel(self.Var_var.get())
+            plt.show()
+        else:
+            messagebox.showinfo("Warning",'Please choose a file to plot')
 
     def onclick(self,event):
         print('button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %(event.button, event.x, event.y, event.xdata, event.ydata))
@@ -241,6 +300,16 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         # Button(self.root,text = 'Click Me', command=lambda:[self.funcA(), self.funcB(), self.funcC()])
         self.master.destroy()
         plt.close('all')
+    def Simulate_Var(self):
+        self.g = Channel(wl=self.WL.get(), pas=0.1, \
+                       nc=self.nC_1.get(), nc_2=self.nC_2.get(), nc_3=self.nC_3.get(), Hc=0.8, \
+                       LC=self.TChan.get(), LB=5., LB_R=5., \
+                       n1B=self.nL1_1.get(), n1C=self.nL1_2.get(), n1D=self.nL1_3.get(), H1=self.TL_1.get(), \
+                       n2B=self.nL2_1.get(), n2C=self.nL2_2.get(), n2D=self.nL2_3.get(), H2=self.TL_2.get(), \
+                       nsub=self.nSub_1.get(), nsub_2=self.nSub_2.get(), nsub_3=self.nSub_3.get(), Hsub=2.,
+                       OR=self.OPR.get())
+        self.g.VariaX(X0=self.X1_var.get(),X1=self.X2_var.get(),dX=self.dX_var.get(),variable=self.Var_var.get()\
+                ,trace=True,Show_Struct=self.Show_Struct_var.get(),SaveFile=self.SaveFile_var.get(),fich=self.FileName_var.get())
     def Solve(self):
         self.g = Channel(wl=self.WL.get(), pas=0.1, \
                        nc=self.nC_1.get(), nc_2=self.nC_2.get(), nc_3=self.nC_3.get(), Hc=0.8, \

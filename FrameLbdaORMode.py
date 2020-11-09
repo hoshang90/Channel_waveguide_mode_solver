@@ -46,7 +46,7 @@ if __name__ == '__main__':
    root = tk.Tk()
    main_app =LaFrame(root,\
            tk.DoubleVar(),tk.DoubleVar(),tk.IntVar()
-           )
+           ,tk.BooleanVar(), tk.BooleanVar())
    root.mainloop()
 
 
