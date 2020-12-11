@@ -5,18 +5,22 @@ from tkinter import ttk
 from tkinter import filedialog
 import os
 class LaFrame(tk.Frame):
-    def __init__(self,master,Var_var,X1_var,X2_var,dX_var,Dir_label_var,FileName_var, Show_Struct_var,SaveFile_var,Dn_diff_var):
+    def __init__(self,master,Var_var,X1_var,X2_var,dX_var,addX_var,addY_var,
+            Dir_label_var,FileName_var, Show_Struct_var,SaveFile_var,Dn_diff_var):
         self.master = master
         tk.Frame.__init__(self, self.master)
-        self.configure_gui(Var_var,X1_var,X2_var,dX_var,Dir_label_var,FileName_var,Show_Struct_var,SaveFile_var,Dn_diff_var)
+        self.configure_gui(Var_var,X1_var,X2_var,dX_var,addX_var,addY_var,Dir_label_var
+                ,FileName_var,Show_Struct_var,SaveFile_var,Dn_diff_var)
         self.create_widgets()
 
     def _close(self):
         self.destroy()
 
-    def configure_gui(self,Var_var,X1_var,X2_var,dX_var,Dir_label_var,FileName_var,Show_Struct_var,SaveFile_var,Dn_diff_var):
-        self.Var_var=Var_var;self.X1_var=X1_var;self.X2_var=X2_var;self.dX_var=dX_var;self.dir_label_var=Dir_label_var
-        self.FileName_var=FileName_var;self.Show_Struct_var=Show_Struct_var;self.SaveFile_var=SaveFile_var;self.Dn_diff_var=Dn_diff_var
+    def configure_gui(self,Var_var,X1_var,X2_var,dX_var,addX_var,addY_var,Dir_label_var,FileName_var
+            ,Show_Struct_var,SaveFile_var,Dn_diff_var):
+        self.Var_var=Var_var;self.X1_var=X1_var;self.X2_var=X2_var;self.dX_var=dX_var;self.addX_var=addX_var;
+        self.addY_var=addY_var;self.dir_label_var=Dir_label_var;self.FileName_var=FileName_var;
+        self.Show_Struct_var=Show_Struct_var;self.SaveFile_var=SaveFile_var;self.Dn_diff_var=Dn_diff_var
         return 1       
     
     def create_widgets(self):
@@ -34,9 +38,13 @@ class LaFrame(tk.Frame):
         ligne+=1
         tk.Label(mfr,text="X2").grid(row=ligne,column=0,sticky='E')
         tk.Entry(mfr, width=5, borderwidth=5, textvariable=self.X2_var).grid(row=ligne, column=1, padx=5, pady=5)
+        tk.Label(mfr,text="Add X").grid(row=ligne,column=2,sticky='E')
+        tk.Entry(mfr, width=5, borderwidth=5, textvariable=self.addX_var).grid(row=ligne, column=3, padx=5, pady=5)
         ligne+=1
         tk.Label(mfr,text='dX').grid(row = ligne, column=0,sticky='E')#,columnspan=3)
         tk.Entry(mfr, width=5, borderwidth=5, textvariable=self.dX_var).grid(row=ligne, column=1, padx=5, pady=5)
+        tk.Label(mfr,text="Add Y").grid(row=ligne,column=2,sticky='E')
+        tk.Entry(mfr, width=5, borderwidth=5, textvariable=self.addY_var).grid(row=ligne, column=3, padx=5, pady=5)
         ligne+=1
         tk.Label(mfr,textvariable=self.dir_label_var).grid(row = ligne, column=0,columnspan=8)
         ligne+=1
@@ -63,6 +71,6 @@ class LaFrame(tk.Frame):
 if __name__ == '__main__':
    root = tk.Tk()
    main_app =LaFrame(root,\
-           tk.StringVar,tk.DoubleVar(),tk.DoubleVar(), tk.DoubleVar()\
+           tk.StringVar,tk.DoubleVar(),tk.DoubleVar(), tk.DoubleVar(),tk.DoubleVar(),tk.DoubleVar()\
            ,tk.StringVar(),tk.StringVar(),tk.BooleanVar(),tk.BooleanVar(),tk.BooleanVar())
    root.mainloop()

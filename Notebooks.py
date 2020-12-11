@@ -49,6 +49,7 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         self.x_cut = DoubleVar();self.x_cut.set(3.1);self.y_cut = DoubleVar();self.y_cut.set(2.3)
         self.Var_var=StringVar();self.Var_var.set("n_rib");self.X1_var=DoubleVar();self.X1_var.set(1.614)
         self.X2_var=DoubleVar();self.X2_var.set(1.62);self.dX_var=DoubleVar();self.dX_var.set(0.001)
+        self.addX_var=DoubleVar();self.addX_var.set(0.0);self.addY_var=DoubleVar();self.addY_var.set(0.0)
         self.FileName_var=StringVar();self.FileName_var.set("Data");self.Show_Struct_var=BooleanVar()
         self.Show_Struct_var.set(False);self.SaveFile_var=BooleanVar();self.SaveFile_var.set(True)
         self.Dn_diff_var=BooleanVar();self.Dn_diff_var.set(False)
@@ -94,10 +95,7 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         #----------- tab 3 ------------ frame f3
         tf3=ttk.Frame(f3)
         tf3.pack()
-        FrameVariable.LaFrame(tf3,\
-               self.Var_var,self.X1_var,self.X2_var,self.dX_var,self.dir_label_var,self.FileName_var\
-               ,self.Show_Struct_var,self.SaveFile_var,self.Dn_diff_var
-                ).pack(side=LEFT)
+        FrameVariable.LaFrame(tf3,self.Var_var,self.X1_var,self.X2_var,self.dX_var,self.addX_var,self.addY_var,self.dir_label_var,self.FileName_var,self.Show_Struct_var,self.SaveFile_var,self.Dn_diff_var).pack(side=LEFT)
         bf3=ttk.Frame(f3)
         bf3.pack(side=BOTTOM)
         self.ButtonsVariable(bf3).pack()
@@ -126,7 +124,9 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
         Button(topframe, text="Simulate",command=lambda:self.Simulate_Var()).pack(side=LEFT)
         Button(topframe, text="Browse A File", command=lambda:self.my_fileDialog(tab="Variable")).pack(side=LEFT)
         #Button(topframe, text="Plot DnSc",command=lambda:self.plot_simulate_ecc()).pack(side=LEFT)
-        Button(topframe, text="Plot TE0TM0",fg='green', command=lambda:self.plot_Varibale(to_Plot="TE0TM0")).pack(side=LEFT)
+        Button(topframe, text="Plot TE0TM0",fg='green', command=lambda:self.plot_Variable(What_plot=True,
+            Add_point=False)).pack(side=LEFT)
+        #Button(topframe, text="Add", command=lambda:self.plot_Variable(What_plot=True,Add_point=True)).pack(side=LEFT)
         return frame
 
     def Plot_indices(self):
@@ -263,7 +263,7 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
             plt.close()
         else:
             messagebox.showinfo("Warning",'Please choose a file to plot')
-    def plot_Varibale(self,to_Plot="TE0TM0"):
+    def plot_Variable(self,to_Plot="TE0TM0",What_plot="DnSc_plot",Add_point=True):
         if self.DnSc_TE0TM0 is not None and to_Plot=="TE0TM0":
             if self.Dn_diff_var.get() is True:
                 plt.plot(self.DnSc_TE0TM0.T[5], self.DnSc_TE0TM0.T[1],label="TE0")
@@ -276,18 +276,20 @@ class Mul_Ch_Wav_Mod_Sol(Frame):
             plt.ylabel('TE0 & TM0 n_eff')
             plt.title("TE0 & TM0 dispersion curves")
             plt.legend()
-            fig = plt.figure(figsize=(12, 6))
-            fig.add_subplot(2,1,1)
-            plt.plot(self.DnSc_TE0TM0.T[0],1e5*self.DnSc_TE0TM0.T[3])
-            plt.ylabel("10^-5*Dn")
-            plt.grid(True)
-            plt.xlabel(self.Var_var.get())
-            fig.add_subplot(2,1,2)
-            plt.plot(self.DnSc_TE0TM0.T[0],100*self.DnSc_TE0TM0.T[4])
-            plt.ylabel("100*Sc")
-            plt.grid(True)
-            plt.xlabel(self.Var_var.get())
-            plt.show()
+            if What_plot:
+                fig, (ax_top, ax_bottom) = plt.subplots(nrows=2, ncols=1, sharex=True,figsize=(12,6))
+                fig.suptitle("Modal bireferengence evolution Vs Channel refractive index")
+                ax_top.set_ylabel("nTE - nTM (Δn)",fontsize=12,color='k')#(r"10$^{-5}$ X Δn")
+                ax_bottom.set_ylabel(r"S$_3$",fontsize=12,color='k')
+                ax_bottom.set_xlabel("Channel refractive index",fontsize=12,color='k')
+                ax_top.grid(True);ax_bottom.grid(True)
+                CB=((0.001*(self.WL.get())*self.OPR.get())/180)
+                ax_top.plot(self.DnSc_TE0TM0.T[0],self.DnSc_TE0TM0.T[3])
+                ax_bottom.plot(self.DnSc_TE0TM0.T[0],np.sin(np.arctan(CB/self.DnSc_TE0TM0.T[3])))
+                #plt.xlabel(self.Var_var.get())
+                plt.show()
+        #elif What_plot and Add_point:
+         #       plt.scatter(self.addX_var.get(),self.addY_var.get())
         else:
             messagebox.showinfo("Warning",'Please choose a file to plot')
 

@@ -334,6 +334,7 @@ class Channel():
             lesDn_diff=[np.abs(np.sqrt(self.ns2_3)-i) for i in lesX]
         elif variable == "n_sub":
             lesDn_diff=[np.abs(np.sqrt(self.n1C2)-i) for i in lesX]
+        lesS3_Dn=lambda x: np.sin(np.arctan((self.OR*1e-3/180*0.64)/x))
         if SaveFile:
             entete=self.LaStructure()
             entete+="the data saved as column stack to be plotted easily with gnuplot"+"\n"
@@ -357,8 +358,8 @@ class Channel():
             plt.grid(True)
             plt.xlabel(variable)
             fig.add_subplot(2,1,2)
-            plt.plot(lesX,100*lesSc)
-            plt.ylabel("100*Sc")
+            plt.plot(lesX,lesS3_Dn(lesDn))
+            plt.ylabel(r"S$_3$")
             plt.grid(True)
             plt.xlabel(variable)
             plt.show()
